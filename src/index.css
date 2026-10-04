@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #F8FAFC;
+    color: #0F172A;
+    overflow-x: hidden;
+  }
+
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
+  }
+}
+
+/* Custom geospatial grid background for white theme */
+.bg-geo-grid {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+}
+
+.bg-geo-radar {
+  background: radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.06) 0%, rgba(248, 250, 252, 0) 70%);
+}
+
+/* Custom scanning animation for satellite viewport */
+@keyframes scan-beam {
+  0% {
+    top: 0%;
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0.85;
+  }
+}
+
+.animate-scan-beam {
+  animation: scan-beam 2.4s ease-in-out infinite alternate;
+}
+
+/* Subtle clean pulse glow */
+@keyframes subtle-glow {
+  0%, 100% {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(14, 165, 233, 0.15);
+  }
+  50% {
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.12), 0 0 0 1px rgba(14, 165, 233, 0.3);
+  }
+}
+
+.glow-sky {
+  animation: subtle-glow 3s ease-in-out infinite;
+}
+
+/* Custom scrollbar for white theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}

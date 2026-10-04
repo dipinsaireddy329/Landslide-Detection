@@ -1,0 +1,8 @@
+{
+  "name": "Landslide Detection from Satellite Imagery",
+  "description": "Geospatial AI disaster monitoring platform utilizing Gabor filtering, VGG19 feature extraction, and ResNet101 classification to detect landslide hazards from satellite imagery.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
