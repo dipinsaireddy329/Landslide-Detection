@@ -32,9 +32,27 @@ export interface AppSettings {
   autoAlertOnCritical: boolean;
 }
 
+// In Vercel / multi-service deployment, the backend is routed under /api or injected via BACKEND_URL
+const getInitialBackendUrl = (): string => {
+  // 1. Check if bound via Vercel service binding
+  if (typeof process !== 'undefined' && process.env && process.env.BACKEND_URL) {
+    return process.env.BACKEND_URL.replace(/\/$/, '');
+  }
+  // 2. Check if set via client Vite env
+  if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_BACKEND_URL) {
+    return (import.meta as any).env.VITE_BACKEND_URL.replace(/\/$/, '');
+  }
+  // 3. In browser in production / Vercel preview, relative root routes directly to /api
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+    return '';
+  }
+  // 4. Default for standalone local dev
+  return '';
+};
+
 const DEFAULT_SETTINGS: AppSettings = {
   backendMode: 'embedded_pipeline',
-  flaskApiUrl: 'http://localhost:5000',
+  flaskApiUrl: getInitialBackendUrl(),
   confidenceThreshold: 0.85,
   autoAlertOnCritical: true
 };
@@ -47,6 +65,15 @@ class ApiService {
   constructor() {
     this.loadFromStorage();
     this.checkFlaskHealth();
+  }
+
+  public getEndpointUrl(path: string): string {
+    const base = (this.settings.flaskApiUrl || '').replace(/\/$/, '');
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    if (!base) {
+      return cleanPath;
+    }
+    return `${base}${cleanPath}`;
   }
 
   private loadFromStorage() {
@@ -106,10 +133,15 @@ class ApiService {
     if (typeof window === 'undefined') return false;
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1200);
-      const res = await fetch(`${this.settings.flaskApiUrl}/api/model-info`, {
+      const timeoutId = setTimeout(() => controller.abort(), 1500);
+      let res = await fetch(this.getEndpointUrl('/api/health'), {
         signal: controller.signal
       });
+      if (!res.ok) {
+        res = await fetch(this.getEndpointUrl('/api/model-info'), {
+          signal: controller.signal
+        });
+      }
       clearTimeout(timeoutId);
       this.isBackendReachable = res.ok;
       return res.ok;
@@ -143,7 +175,7 @@ class ApiService {
     // In connected Flask mode:
     if (this.settings.backendMode === 'flask_rest_api' && this.isBackendReachable) {
       try {
-        const res = await fetch(`${this.settings.flaskApiUrl}/api/auth/login`, {
+        const res = await fetch(this.getEndpointUrl('/api/auth/login'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -179,7 +211,7 @@ class ApiService {
 
     if (this.settings.backendMode === 'flask_rest_api' && this.isBackendReachable) {
       try {
-        const res = await fetch(`${this.settings.flaskApiUrl}/api/auth/register`, {
+        const res = await fetch(this.getEndpointUrl('/api/auth/register'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password })
@@ -246,7 +278,7 @@ class ApiService {
         }
         formData.append('location', metadata?.location || 'Unspecified Sector');
 
-        const res = await fetch(`${this.settings.flaskApiUrl}/api/predict`, {
+        const res = await fetch(this.getEndpointUrl('/api/predict'), {
           method: 'POST',
           body: formData
         });

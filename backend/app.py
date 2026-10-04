@@ -6,7 +6,7 @@ import os
 import uuid
 import hashlib
 from datetime import datetime
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from PIL import Image
 
@@ -22,6 +22,27 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # Helper to hash passwords
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
+
+# ----------------- HEALTH & SYSTEM CHECKS -----------------
+
+@app.route('/api/health', methods=['GET'])
+@app.route('/health', methods=['GET'])
+@app.route('/', methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "service": "landslide-ai-backend",
+        "framework": "flask",
+        "version": "2.4.0",
+        "timestamp": datetime.utcnow().isoformat()
+    })
+
+# ----------------- STATIC UPLOAD SERVING -----------------
+
+@app.route('/api/uploads/<path:filename>', methods=['GET'])
+@app.route('/uploads/<path:filename>', methods=['GET'])
+def serve_uploaded_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
 
 # ----------------- AUTH ENDPOINTS -----------------
 
@@ -189,7 +210,7 @@ def get_predictions():
             "id": r['id'],
             "imageName": r['image_name'],
             "imageSize": r['image_size'],
-            "imageUrl": f"/uploads/{os.path.basename(r['image_path'])}",
+            "imageUrl": f"/api/uploads/{os.path.basename(r['image_path'])}",
             "prediction": r['prediction'],
             "confidence": r['confidence'],
             "riskLevel": r['risk_level'],
