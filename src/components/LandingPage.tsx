@@ -11,6 +11,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { generateProceduralSatelliteImage } from '../services/sampleData';
+import { TirupatiSevenHillsBackground } from './TirupatiSevenHillsBackground';
 
 interface LandingPageProps {
   onStartAnalysis: () => void;
@@ -34,10 +35,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     <div className="relative min-h-[calc(100vh-4rem)] bg-[#F8FAFC] overflow-hidden">
       
       {/* Background subtle grid pattern */}
-      <div className="absolute inset-0 bg-geo-grid opacity-60 pointer-events-none" />
-      <div className="absolute top-1/6 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-sky-200/30 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute inset-0 bg-geo-grid opacity-60 pointer-events-none z-0" />
+      <div className="absolute top-1/6 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-sky-200/30 blur-[120px] rounded-full pointer-events-none z-0" />
 
-      <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+      {/* Tirupati Seven Hills Panoramic Background Silhouette */}
+      <TirupatiSevenHillsBackground
+        variant="hero"
+        className="absolute bottom-0 left-0 right-0 h-[280px] sm:h-[340px] lg:h-[420px] w-full pointer-events-none z-0"
+        opacity={0.12}
+      />
+
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
         
         {/* Top Operational Badge */}
         <div className="flex items-center justify-center">
