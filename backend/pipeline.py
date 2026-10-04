@@ -2,7 +2,7 @@
 Modular AI Deep Learning Pipeline for Landslide Detection
 Components:
 1. Image Preprocessing & Resizing (224x224, Normalization)
-2. 2D Gabor Filter Bank (Texture & Spatial Frequency Extraction)
+2. 2D Gabor Filter Bank (Texture & Spatial Frequency Extraction via pure NumPy / CV)
 3. VGG19 Backbone (High-level spatial feature representations)
 4. ResNet101 Classifier (Deep residual classification & logits)
 5. Decision Boundary & Confidence Score Generation
@@ -11,7 +11,40 @@ Components:
 import time
 import numpy as np
 from PIL import Image
-import cv2
+
+try:
+    import cv2
+    HAS_CV2 = True
+except ImportError:
+    HAS_CV2 = False
+
+
+def _create_numpy_gabor_kernel(ksize: int = 15, sigma: float = 2.5, theta: float = 0.0, 
+                               lambd: float = 4.0, gamma: float = 0.5, psi: float = 0.0) -> np.ndarray:
+    """Generate 2D Gabor filter kernel in pure NumPy"""
+    half = ksize // 2
+    y, x = np.mgrid[-half:half+1, -half:half+1]
+    x_theta = x * np.cos(theta) + y * np.sin(theta)
+    y_theta = -x * np.sin(theta) + y * np.cos(theta)
+    gb = np.exp(-0.5 * (x_theta**2 + (gamma * y_theta)**2) / (sigma**2)) * np.cos(2 * np.pi * x_theta / lambd + psi)
+    return gb.astype(np.float32)
+
+
+def _convolve2d_fft(image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+    """Fast 2D linear convolution using Real FFT (NumPy native)"""
+    ih, iw = image.shape
+    kh, kw = kernel.shape
+    s1 = ih + kh - 1
+    s2 = iw + kw - 1
+
+    f_img = np.fft.rfft2(image, s=(s1, s2))
+    f_ker = np.fft.rfft2(kernel, s=(s1, s2))
+    res = np.fft.irfft2(f_img * f_ker, s=(s1, s2))
+
+    start_h = (kh - 1) // 2
+    start_w = (kw - 1) // 2
+    return res[start_h:start_h + ih, start_w:start_w + iw]
+
 
 class LandslideDetectionPipeline:
     def __init__(self):
@@ -32,21 +65,38 @@ class LandslideDetectionPipeline:
 
     def apply_gabor_filters(self, normalized_img: np.ndarray) -> dict:
         """Apply multi-orientation 2D Gabor filter bank"""
-        gray = cv2.cvtColor((normalized_img * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY)
+        # Grayscale luminance formula: Y = 0.299*R + 0.587*G + 0.114*B
+        if HAS_CV2:
+            gray = cv2.cvtColor((normalized_img * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY).astype(np.float32)
+        else:
+            gray = (0.299 * normalized_img[:, :, 0] + 0.587 * normalized_img[:, :, 1] + 0.114 * normalized_img[:, :, 2]) * 255.0
+
         energies = []
         angle_breakdown = []
 
-        for idx, theta in enumerate(self.gabor_orientations):
-            kernel = cv2.getGaborKernel(
-                ksize=(15, 15),
-                sigma=2.5,
-                theta=theta,
-                lambd=4.0,
-                gamma=0.5,
-                psi=0,
-                ktype=cv2.CV_32F
-            )
-            filtered = cv2.filter2D(gray, cv2.CV_32F, kernel)
+        for theta in self.gabor_orientations:
+            if HAS_CV2:
+                kernel = cv2.getGaborKernel(
+                    ksize=(15, 15),
+                    sigma=2.5,
+                    theta=theta,
+                    lambd=4.0,
+                    gamma=0.5,
+                    psi=0,
+                    ktype=cv2.CV_32F
+                )
+                filtered = cv2.filter2D(gray, cv2.CV_32F, kernel)
+            else:
+                kernel = _create_numpy_gabor_kernel(
+                    ksize=15,
+                    sigma=2.5,
+                    theta=theta,
+                    lambd=4.0,
+                    gamma=0.5,
+                    psi=0.0
+                )
+                filtered = _convolve2d_fft(gray, kernel)
+
             energy = float(np.mean(np.abs(filtered))) / 255.0
             energies.append(energy)
             deg = int(np.degrees(theta))

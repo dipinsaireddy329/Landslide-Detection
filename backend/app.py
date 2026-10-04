@@ -16,8 +16,20 @@ from pipeline import pipeline
 app = Flask(__name__)
 CORS(app)
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+def _get_upload_folder():
+    if os.environ.get('VERCEL'):
+        target = '/tmp/uploads'
+    else:
+        target = os.path.join(os.path.dirname(__file__), 'uploads')
+        try:
+            os.makedirs(target, exist_ok=True)
+            return target
+        except (OSError, PermissionError):
+            target = '/tmp/uploads'
+    os.makedirs(target, exist_ok=True)
+    return target
+
+UPLOAD_FOLDER = _get_upload_folder()
 
 # Helper to hash passwords
 def hash_password(password: str) -> str:
