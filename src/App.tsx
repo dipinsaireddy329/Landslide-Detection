@@ -13,7 +13,7 @@ import { SystemTestingView } from './components/SystemTestingView';
 import { AboutProjectView } from './components/AboutProjectView';
 import { SettingsView } from './components/SettingsView';
 import { AuthModal } from './components/AuthModal';
-import { TirupatiSevenHillsBackground } from './components/TirupatiSevenHillsBackground';
+import { TirupatiPhotographicBackground } from './components/TirupatiPhotographicBackground';
 
 import { api } from './services/api';
 import { User, PredictionRecord, AlertRecord, AnalyticsData } from './types';
@@ -244,10 +244,10 @@ export default function App() {
         }}
       />
 
-      {/* Tirupati Seven Hills Subtle Panoramic Background Silhouette */}
-      <TirupatiSevenHillsBackground
+      {/* Tirupati Seven Hills Photographic Panoramic Background */}
+      <TirupatiPhotographicBackground
         variant="dashboard"
-        className="fixed bottom-0 left-0 right-0 h-[180px] sm:h-[220px] pointer-events-none z-0"
+        className="fixed bottom-0 left-0 right-0 h-[240px] sm:h-[300px] pointer-events-none z-0"
         opacity={activeView === 'landing' ? 0 : 0.08}
       />
 
