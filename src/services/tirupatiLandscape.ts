@@ -13,13 +13,14 @@ export function getTirupatiPhotographicImage(): string {
   if (typeof document === 'undefined') return '';
   if (cachedTirupatiDataUrl) return cachedTirupatiDataUrl;
 
-  const width = 1920;
-  const height = 1080;
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return '';
+  try {
+    const width = 1920;
+    const height = 1080;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
 
   // ---------------- 1. SKY & ATMOSPHERE ----------------
   // Soft atmospheric sky gradient matching reference: pale cerulean blue down to hazy horizon
@@ -44,7 +45,11 @@ export function getTirupatiPhotographicImage(): string {
     cloudGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
     ctx.fillStyle = cloudGrad;
     ctx.beginPath();
-    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    if (typeof ctx.ellipse === 'function') {
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    } else {
+      ctx.arc(cx, cy, Math.max(rx, ry), 0, Math.PI * 2);
+    }
     ctx.fill();
   }
   ctx.restore();
@@ -297,7 +302,11 @@ export function getTirupatiPhotographicImage(): string {
 
   ctx.restore();
 
-  // Export as high-quality photographic JPEG data URL
-  cachedTirupatiDataUrl = canvas.toDataURL('image/jpeg', 0.92);
-  return cachedTirupatiDataUrl;
+    // Export as high-quality photographic JPEG data URL
+    cachedTirupatiDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    return cachedTirupatiDataUrl;
+  } catch (err) {
+    console.warn('Tirupati photographic background canvas rendering error, using fallback:', err);
+    return '';
+  }
 }

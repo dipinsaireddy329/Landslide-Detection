@@ -7,7 +7,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { api } from '../services/api';
-import { SATELLITE_SAMPLES } from '../services/sampleData';
+import { SATELLITE_SAMPLES, getSampleImageDataUrl } from '../services/sampleData';
 
 interface TestCase {
   id: string;
@@ -222,8 +222,9 @@ export const SystemTestingView: React.FC = () => {
           )
         );
       } else if (testId === 'PRED-01') {
-        const sample = SATELLITE_SAMPLES[0];
-        const res = await api.predict(sample.imageDataUrl, { name: sample.name, location: sample.region });
+        const sample = SATELLITE_SAMPLES.find((s) => s.groundTruth === 'landslide') || SATELLITE_SAMPLES[0];
+        const imgUrl = getSampleImageDataUrl(sample);
+        const res = await api.predict(imgUrl, { name: sample.name, location: sample.region });
         const elapsed = Math.round(performance.now() - start);
         const passed = res.prediction.prediction === 'landslide';
         setTestCases((prev) =>
@@ -239,8 +240,9 @@ export const SystemTestingView: React.FC = () => {
           )
         );
       } else if (testId === 'PRED-02') {
-        const sample = SATELLITE_SAMPLES[2];
-        const res = await api.predict(sample.imageDataUrl, { name: sample.name, location: sample.region });
+        const sample = SATELLITE_SAMPLES.find((s) => s.groundTruth === 'non-landslide') || SATELLITE_SAMPLES[10];
+        const imgUrl = getSampleImageDataUrl(sample);
+        const res = await api.predict(imgUrl, { name: sample.name, location: sample.region });
         const elapsed = Math.round(performance.now() - start);
         const passed = res.prediction.prediction === 'non-landslide';
         setTestCases((prev) =>

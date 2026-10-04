@@ -11,7 +11,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { generateProceduralSatelliteImage } from '../services/sampleData';
-import { TirupatiPhotographicBackground } from './TirupatiPhotographicBackground';
+import { TirupatiSevenHillsBackground } from './TirupatiSevenHillsBackground';
 
 interface LandingPageProps {
   onStartAnalysis: () => void;
@@ -38,11 +38,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <div className="absolute inset-0 bg-geo-grid opacity-60 pointer-events-none z-0" />
       <div className="absolute top-1/6 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-sky-200/30 blur-[120px] rounded-full pointer-events-none z-0" />
 
-      {/* Tirupati Seven Hills Photographic Panoramic Background */}
-      <TirupatiPhotographicBackground
+      {/* Subtle Tirupati Seven Hills Silhouette Vector Background (8-12% opacity) */}
+      <TirupatiSevenHillsBackground
         variant="hero"
-        className="absolute bottom-0 left-0 right-0 h-[380px] sm:h-[480px] lg:h-[580px] w-full pointer-events-none z-0"
-        opacity={0.13}
+        className="absolute bottom-0 left-0 right-0 h-[280px] sm:h-[360px] lg:h-[440px] w-full pointer-events-none z-0"
+        opacity={0.11}
       />
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">

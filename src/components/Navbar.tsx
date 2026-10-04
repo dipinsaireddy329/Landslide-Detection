@@ -7,7 +7,8 @@ import {
   Menu, 
   X,
   Server,
-  ShieldAlert
+  ShieldAlert,
+  MoreVertical
 } from 'lucide-react';
 import { User, AlertRecord } from '../types';
 
@@ -21,6 +22,8 @@ interface NavbarProps {
   isFlaskConnected: boolean;
   mobileMenuOpen: boolean;
   onToggleMobileMenu: () => void;
+  isSidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -32,7 +35,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   alerts,
   isFlaskConnected,
   mobileMenuOpen,
-  onToggleMobileMenu
+  onToggleMobileMenu,
+  isSidebarCollapsed = false,
+  onToggleSidebar
 }) => {
   const activeAlertsCount = alerts.filter(a => a.status === 'active').length;
 
@@ -40,8 +45,24 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/90 backdrop-blur-md transition-colors">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         
-        {/* Zone 1: Single Brand Wordmark */}
-        <div className="flex items-center gap-3">
+        {/* Zone 1: Brand Wordmark & 3-dots sidebar close/toggle button */}
+        <div className="flex items-center gap-2.5">
+          {/* 3 dots button to close/open left side navigation */}
+          {onToggleSidebar && (
+            <button
+              onClick={onToggleSidebar}
+              className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-all cursor-pointer ${
+                isSidebarCollapsed
+                  ? 'border-sky-300 bg-sky-50 text-sky-700 shadow-xs'
+                  : 'border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+              }`}
+              title={isSidebarCollapsed ? "Open left sidebar (3 dots)" : "Close left sidebar (3 dots)"}
+              aria-label="Toggle left sidebar (3 dots)"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </button>
+          )}
+
           <button 
             onClick={() => onNavigate('dashboard')} 
             className="flex items-center gap-2.5 text-left group cursor-pointer"

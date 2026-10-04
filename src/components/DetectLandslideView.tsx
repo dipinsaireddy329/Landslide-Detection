@@ -4,6 +4,7 @@ import { ProcessingPipeline } from './ProcessingPipeline';
 import { PredictionResult } from './PredictionResult';
 import { api } from '../services/api';
 import { PredictionRecord, PredictResponse } from '../types';
+import { AlertCircle } from 'lucide-react';
 
 interface DetectLandslideViewProps {
   onPredictionComplete: (prediction: PredictionRecord) => void;
@@ -19,6 +20,7 @@ export const DetectLandslideView: React.FC<DetectLandslideViewProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [pipelineStage, setPipelineStage] = useState(1);
   const [isPipelineComplete, setIsPipelineComplete] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [currentResult, setCurrentResult] = useState<{
     prediction: PredictionRecord;
     response: PredictResponse;
@@ -36,6 +38,7 @@ export const DetectLandslideView: React.FC<DetectLandslideViewProps> = ({
     setIsProcessing(true);
     setIsPipelineComplete(false);
     setCurrentResult(null);
+    setErrorMsg(null);
     setPipelineStage(1);
 
     // Realistic pipeline stage animation delays
@@ -77,7 +80,7 @@ export const DetectLandslideView: React.FC<DetectLandslideViewProps> = ({
       onPredictionComplete(result.prediction);
     } catch (err: any) {
       console.error('Inference error:', err);
-      alert('Error during image processing: ' + err.message);
+      setErrorMsg(err?.message || 'Error occurred during satellite computer vision inference.');
     } finally {
       setIsProcessing(false);
     }
@@ -86,6 +89,7 @@ export const DetectLandslideView: React.FC<DetectLandslideViewProps> = ({
   const handleNewAnalysis = () => {
     setCurrentResult(null);
     setIsPipelineComplete(false);
+    setErrorMsg(null);
     setPipelineStage(1);
     if (onClearInspect) onClearInspect();
   };
@@ -116,6 +120,23 @@ export const DetectLandslideView: React.FC<DetectLandslideViewProps> = ({
           </button>
         )}
       </div>
+
+      {/* Error message banner */}
+      {errorMsg && (
+        <div className="flex items-center gap-2.5 p-4 rounded-xl border border-rose-200 bg-rose-50 text-xs text-rose-800 shadow-xs">
+          <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+          <div className="flex-1">
+            <span className="font-bold">Inference Notice: </span>
+            <span>{errorMsg}</span>
+          </div>
+          <button
+            onClick={() => setErrorMsg(null)}
+            className="text-[11px] font-mono text-rose-600 hover:text-rose-900 underline cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* If processing or if analysis completed, display the active pipeline progress */}
       {(isProcessing || currentResult) && (

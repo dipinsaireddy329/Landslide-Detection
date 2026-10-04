@@ -12,6 +12,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { PredictionRecord, AlertRecord, AnalyticsData } from '../types';
+import { SATELLITE_SAMPLES, getSampleImageDataUrl } from '../services/sampleData';
 
 interface DashboardOverviewProps {
   analytics: AnalyticsData;
@@ -187,6 +188,63 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
         </div>
       )}
+
+      {/* 20 Satellite Benchmark Scenes Showcase */}
+      <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-sky-700 uppercase tracking-wider font-semibold">
+                Project Benchmark Dataset
+              </span>
+              <span className="text-[10px] font-mono bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5 rounded-full font-bold">
+                20 Global Scenes
+              </span>
+            </div>
+            <h2 className="text-base font-bold text-slate-900 mt-0.5">
+              Satellite Verification Benchmark (Himalayas, Tirupati, Ghats & Global)
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Pre-loaded 20 remote sensing scenes (10 landslide hazards & 10 stable slopes) ready for computer vision inference.
+            </p>
+          </div>
+          <button
+            onClick={() => onNavigate('detect')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto shrink-0"
+          >
+            <span>Open All 20 in Detector</span>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        {/* Compact preview of benchmark scenes */}
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          {SATELLITE_SAMPLES.slice(0, 6).map((sample) => {
+            const isHazard = sample.groundTruth === 'landslide';
+            const imgUrl = getSampleImageDataUrl(sample);
+            return (
+              <div
+                key={sample.id}
+                onClick={() => onNavigate('detect')}
+                className="group rounded-lg border border-slate-200 overflow-hidden bg-slate-50 hover:border-sky-400 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between"
+              >
+                <div className="relative aspect-[16/10] overflow-hidden bg-slate-950">
+                  <img src={imgUrl} alt={sample.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  <span className={`absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold ${
+                    isHazard ? 'bg-rose-950/85 text-rose-300 border border-rose-500/40' : 'bg-emerald-950/85 text-emerald-300 border border-emerald-500/40'
+                  }`}>
+                    {isHazard ? 'Hazard' : 'Stable'}
+                  </span>
+                </div>
+                <div className="p-2">
+                  <div className="text-[11px] font-bold text-slate-900 group-hover:text-sky-700 truncate">{sample.name}</div>
+                  <div className="text-[10px] font-mono text-slate-500 truncate">{sample.region.split(',')[0]}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Bottom Grid: Recent Inferences & Topology */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

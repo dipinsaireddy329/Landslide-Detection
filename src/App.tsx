@@ -13,7 +13,8 @@ import { SystemTestingView } from './components/SystemTestingView';
 import { AboutProjectView } from './components/AboutProjectView';
 import { SettingsView } from './components/SettingsView';
 import { AuthModal } from './components/AuthModal';
-import { TirupatiPhotographicBackground } from './components/TirupatiPhotographicBackground';
+import { TirupatiSevenHillsBackground } from './components/TirupatiSevenHillsBackground';
+import { MoreVertical } from 'lucide-react';
 
 import { api } from './services/api';
 import { User, PredictionRecord, AlertRecord, AnalyticsData } from './types';
@@ -30,29 +31,44 @@ export default function App() {
   // UI states
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [activeInspectPrediction, setActiveInspectPrediction] = useState<PredictionRecord | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
 
   // Initial data load
   useEffect(() => {
-    loadAppState();
+    loadAppState().catch((err) => {
+      console.warn('Initial app state loading notice:', err);
+    });
     
-    // Check Flask API connectivity
-    api.checkFlaskHealth().then(setIsFlaskConnected);
+    // Check Flask API connectivity safely
+    api.checkFlaskHealth()
+      .then(setIsFlaskConnected)
+      .catch(() => setIsFlaskConnected(false));
   }, []);
 
   const loadAppState = async () => {
-    const user = api.getCurrentUser();
-    setCurrentUser(user);
+    try {
+      const user = api.getCurrentUser();
+      setCurrentUser(user);
 
-    const [predList, alertList, analyticsData] = await Promise.all([
-      api.getPredictions(),
-      api.getAlerts(),
-      api.getAnalytics()
-    ]);
+      const [predList, alertList, analyticsData] = await Promise.all([
+        api.getPredictions(),
+        api.getAlerts(),
+        api.getAnalytics()
+      ]);
 
-    setPredictions(predList);
-    setAlerts(alertList);
-    setAnalytics(analyticsData);
+      setPredictions(predList);
+      setAlerts(alertList);
+      setAnalytics(analyticsData);
+    } catch (e) {
+      console.warn('Error loading app state:', e);
+    }
   };
 
   const handleNavigate = (view: string) => {
@@ -94,7 +110,7 @@ export default function App() {
   const handleResetDatabase = async () => {
     api.resetDatabase();
     await loadAppState();
-    alert('Benchmark sample dataset has been reset.');
+    showToast('Benchmark sample dataset has been reset.');
   };
 
   return (
@@ -111,6 +127,8 @@ export default function App() {
         isFlaskConnected={isFlaskConnected}
         mobileMenuOpen={mobileMenuOpen}
         onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
+        isSidebarCollapsed={sidebarCollapsed}
+        onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
 
       {/* Main Workspace Frame */}
@@ -123,8 +141,21 @@ export default function App() {
           />
         </main>
       ) : (
-        <div className="flex-1 flex max-w-7xl w-full mx-auto">
+        <div className="flex-1 flex max-w-7xl w-full mx-auto relative">
           
+          {/* Floating 3-dots button to uncollapse/open left sidebar when closed */}
+          {sidebarCollapsed && (
+            <button
+              onClick={() => setSidebarCollapsed(false)}
+              className="fixed left-3 top-20 z-30 flex items-center gap-2 px-3 py-2 rounded-xl bg-white/95 border border-slate-200/90 shadow-lg text-xs font-semibold text-slate-800 hover:text-sky-700 hover:bg-sky-50 hover:border-sky-300 transition-all cursor-pointer backdrop-blur-md animate-fade-in group"
+              title="Open left sidebar (3 dots)"
+              aria-label="Open left sidebar (3 dots)"
+            >
+              <MoreVertical className="h-4 w-4 text-sky-600 group-hover:scale-110 transition-transform" />
+              <span className="font-mono text-[11px] text-slate-600 group-hover:text-sky-700">Open Menu</span>
+            </button>
+          )}
+
           {/* Responsive Sidebar */}
           <Sidebar
             activeView={activeView}
@@ -132,6 +163,8 @@ export default function App() {
             alerts={alerts}
             isMobileOpen={mobileMenuOpen}
             onCloseMobile={() => setMobileMenuOpen(false)}
+            isCollapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           />
 
           {/* Center Dynamic Content Area */}
@@ -244,10 +277,18 @@ export default function App() {
         }}
       />
 
-      {/* Tirupati Seven Hills Photographic Panoramic Background */}
-      <TirupatiPhotographicBackground
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 text-white px-4 py-3 text-xs font-semibold shadow-xl border border-slate-700 animate-fade-in">
+          <span className="h-2 w-2 rounded-full bg-emerald-400" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Subtle Tirupati Seven Hills Silhouette Vector Background (8-12% opacity) */}
+      <TirupatiSevenHillsBackground
         variant="dashboard"
-        className="fixed bottom-0 left-0 right-0 h-[240px] sm:h-[300px] pointer-events-none z-0"
+        className="fixed bottom-0 left-0 right-0 h-[220px] sm:h-[280px] pointer-events-none z-0"
         opacity={activeView === 'landing' ? 0 : 0.08}
       />
 

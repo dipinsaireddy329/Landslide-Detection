@@ -8,10 +8,14 @@ import {
   Sparkles, 
   Crosshair, 
   MapPin,
-  ChevronRight
+  ChevronRight,
+  Search,
+  Filter,
+  Zap,
+  Globe
 } from 'lucide-react';
 import { SatelliteSample } from '../types';
-import { SATELLITE_SAMPLES } from '../services/sampleData';
+import { SATELLITE_SAMPLES, getSampleImageDataUrl } from '../services/sampleData';
 
 interface UploadDropzoneProps {
   onAnalyze: (fileOrUrl: File | string, metadata: { name: string; location: string }) => void;
@@ -30,6 +34,10 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
   const [isDragOver, setIsDragOver] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [selectedSampleId, setSelectedSampleId] = useState<string | null>(null);
+
+  // Gallery filter & search state for the 20 benchmark scenes
+  const [filterCategory, setFilterCategory] = useState<'all' | 'landslide' | 'stable'>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -87,14 +95,23 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleSelectSample = (sample: SatelliteSample) => {
+  const handleSelectSample = (sample: SatelliteSample, autoAnalyze: boolean = false) => {
     setErrorMsg(null);
     setSelectedSampleId(sample.id);
     setSelectedFile(null);
-    setFileName(`${sample.name.replace(/\s+/g, '_')}_Sentinel2.png`);
-    setFileSize(2340000);
+    const dataUrl = getSampleImageDataUrl(sample);
+    const resolvedName = `${sample.name.replace(/\s+/g, '_')}_${(sample.sensor || 'Sentinel2').replace(/[^a-zA-Z0-9]/g, '')}.png`;
+    setFileName(resolvedName);
+    setFileSize(2450000);
     setLocationName(sample.region);
-    setPreviewUrl(sample.imageDataUrl);
+    setPreviewUrl(dataUrl);
+
+    if (autoAnalyze) {
+      onAnalyze(dataUrl, {
+        name: resolvedName,
+        location: sample.region
+      });
+    }
   };
 
   const handleTriggerAnalysis = () => {
@@ -109,6 +126,23 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
       onAnalyze(previewUrl, { name: fileName, location: locationName });
     }
   };
+
+  // Filter 20 benchmark scenes
+  const filteredSamples = SATELLITE_SAMPLES.filter(sample => {
+    const matchesCategory = 
+      filterCategory === 'all' || 
+      (filterCategory === 'landslide' && sample.groundTruth === 'landslide') ||
+      (filterCategory === 'stable' && sample.groundTruth === 'non-landslide');
+
+    const matchesSearch = 
+      !searchQuery.trim() ||
+      sample.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      sample.region.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (sample.sensor && sample.sensor.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      sample.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <div className="space-y-6">
@@ -265,63 +299,200 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
 
       </div>
 
-      {/* Quick Benchmark Satellite Library */}
-      <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-        <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
+      {/* Benchmark Satellite Image Library - 20 Curated Scenes */}
+      <div className="rounded-xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+        
+        {/* Header with Title and Scene Count */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
           <div>
-            <span className="text-xs font-mono text-sky-700 uppercase tracking-wider font-semibold">
-              Verification Testbed
-            </span>
-            <h3 className="text-sm font-bold text-slate-900 mt-0.5">
-              Curated Satellite Test Samples
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-sky-700 uppercase tracking-wider font-semibold">
+                Verification Testbed
+              </span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-sky-100 text-sky-800 border border-sky-200">
+                20 SCENES LOADED
+              </span>
+            </div>
+            <h3 className="text-base font-bold text-slate-900 mt-1">
+              Curated Satellite Benchmark Dataset (20 Global Scenes)
             </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Select any scene to preview telemetry or click "1-Click Detect" to immediately run the Gabor + VGG19 + ResNet101 pipeline.
+            </p>
           </div>
-          <span className="text-xs text-slate-500 font-mono">
-            Click to load & analyze
-          </span>
+
+          {/* Quick Stats */}
+          <div className="flex items-center gap-2 text-xs font-mono text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 self-start md:self-auto">
+            <span className="flex items-center gap-1 text-rose-700 font-semibold">
+              <span className="h-2 w-2 rounded-full bg-rose-500" />
+              10 Hazards
+            </span>
+            <span>·</span>
+            <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              10 Stable
+            </span>
+          </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {SATELLITE_SAMPLES.map((sample) => {
+        {/* Filters and Search Bar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+          {/* Filter Pills */}
+          <div className="inline-flex items-center p-1 rounded-lg bg-slate-100 border border-slate-200 text-xs">
+            <button
+              type="button"
+              onClick={() => setFilterCategory('all')}
+              className={`px-3 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                filterCategory === 'all' 
+                  ? 'bg-white text-slate-900 shadow-2xs font-semibold' 
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              All Scenes (20)
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterCategory('landslide')}
+              className={`px-3 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                filterCategory === 'landslide' 
+                  ? 'bg-rose-500 text-white shadow-2xs font-semibold' 
+                  : 'text-slate-600 hover:text-rose-700'
+              }`}
+            >
+              Landslides (10)
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterCategory('stable')}
+              className={`px-3 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                filterCategory === 'stable' 
+                  ? 'bg-emerald-600 text-white shadow-2xs font-semibold' 
+                  : 'text-slate-600 hover:text-emerald-700'
+              }`}
+            >
+              Stable Slopes (10)
+            </button>
+          </div>
+
+          {/* Search Box */}
+          <div className="relative flex-1 max-w-xs">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search region, sensor, hazard..."
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-sky-500 focus:bg-white"
+            />
+          </div>
+        </div>
+
+        {/* 20 Image Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-2">
+          {filteredSamples.map((sample) => {
             const isSelected = selectedSampleId === sample.id;
             const isHazard = sample.groundTruth === 'landslide';
+            const sampleImage = getSampleImageDataUrl(sample);
 
             return (
-              <button
+              <div
                 key={sample.id}
-                type="button"
-                onClick={() => handleSelectSample(sample)}
-                className={`text-left rounded-lg p-3 border transition-all cursor-pointer ${
+                className={`group relative flex flex-col justify-between rounded-xl border bg-white overflow-hidden transition-all duration-200 shadow-2xs hover:shadow-md ${
                   isSelected
-                    ? 'border-sky-500 bg-sky-50/70 ring-1 ring-sky-500 shadow-xs'
-                    : 'border-slate-200 bg-slate-50/50 hover:border-slate-300 hover:bg-slate-50'
+                    ? 'border-sky-500 ring-2 ring-sky-400/50'
+                    : 'border-slate-200/90 hover:border-slate-300'
                 }`}
               >
-                <div className="flex items-center justify-between text-[11px] font-mono mb-1.5">
-                  <span className={`font-semibold ${isHazard ? 'text-rose-700' : 'text-emerald-700'}`}>
-                    {isHazard ? 'Ground Truth: Landslide' : 'Ground Truth: Stable'}
-                  </span>
-                  <span className="text-slate-500">{sample.elevation}</span>
+                {/* Satellite Image Thumbnail with Overlay Badges */}
+                <div 
+                  className="relative aspect-[16/10] w-full overflow-hidden bg-slate-950 cursor-pointer"
+                  onClick={() => handleSelectSample(sample, false)}
+                >
+                  <img
+                    src={sampleImage}
+                    alt={sample.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+                  
+                  {/* Subtle Grid Reticle */}
+                  <div className="absolute inset-0 bg-geo-grid opacity-25 pointer-events-none" />
+
+                  {/* Ground Truth Pill */}
+                  <div className="absolute top-2 left-2">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold shadow-xs backdrop-blur-xs ${
+                      isHazard
+                        ? 'bg-rose-950/85 text-rose-300 border border-rose-500/40'
+                        : 'bg-emerald-950/85 text-emerald-300 border border-emerald-500/40'
+                    }`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${isHazard ? 'bg-rose-400 animate-pulse' : 'bg-emerald-400'}`} />
+                      {isHazard ? 'Landslide' : 'Stable'}
+                    </span>
+                  </div>
+
+                  {/* Sensor Badge */}
+                  <div className="absolute top-2 right-2">
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-medium bg-slate-900/80 text-slate-300 border border-slate-700/60 backdrop-blur-xs">
+                      {sample.sensor || 'Sentinel-2'}
+                    </span>
+                  </div>
+
+                  {/* Elevation in bottom left */}
+                  <div className="absolute bottom-1.5 left-2 text-[10px] font-mono text-white/90 drop-shadow-xs">
+                    {sample.elevation}
+                  </div>
                 </div>
 
-                <div className="text-xs font-bold text-slate-900 truncate">
-                  {sample.name}
-                </div>
+                {/* Content Info */}
+                <div className="p-3 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 group-hover:text-sky-700 transition-colors line-clamp-1">
+                      {sample.name}
+                    </h4>
+                    <p className="text-[11px] font-mono text-slate-500 flex items-center gap-1 mt-0.5">
+                      <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
+                      <span className="truncate">{sample.region}</span>
+                    </p>
+                    <p className="text-[11px] text-slate-600 line-clamp-2 mt-1.5 leading-snug">
+                      {sample.description}
+                    </p>
+                  </div>
 
-                <div className="text-[11px] text-slate-600 line-clamp-2 mt-1">
-                  {sample.description}
-                </div>
+                  {/* Action Buttons */}
+                  <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectSample(sample, false)}
+                      disabled={isProcessing}
+                      className="flex-1 py-1.5 px-2 rounded-lg border border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-slate-100 text-[11px] font-medium text-slate-700 transition-colors cursor-pointer text-center"
+                    >
+                      {isSelected ? 'Loaded' : 'Load Scene'}
+                    </button>
 
-                <div className="mt-2.5 flex items-center justify-between text-[10px] font-mono text-slate-500 pt-2 border-t border-slate-200/70">
-                  <span>{sample.region.split(',')[0]}</span>
-                  <span className="text-sky-700 font-semibold flex items-center">
-                    Select <ChevronRight className="h-3 w-3 inline" />
-                  </span>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectSample(sample, true)}
+                      disabled={isProcessing}
+                      className="flex items-center justify-center gap-1 py-1.5 px-2.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-[11px] font-bold text-white transition-all shadow-2xs hover:shadow-xs active:scale-97 cursor-pointer shrink-0"
+                      title="Run AI Detection immediately on this scene"
+                    >
+                      <Zap className="h-3 w-3" />
+                      <span>Detect</span>
+                    </button>
+                  </div>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
+
+        {/* Empty Search State */}
+        {filteredSamples.length === 0 && (
+          <div className="py-8 text-center text-xs text-slate-500">
+            No satellite scenes match "{searchQuery}". Try searching for "Himalayas", "Tirupati", "Sentinel", or "Alpine".
+          </div>
+        )}
+
       </div>
 
     </div>

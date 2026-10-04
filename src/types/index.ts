@@ -115,4 +115,7 @@ export interface SatelliteSample {
   elevation: string;
   coordinates: { lat: number; lng: number };
   imageDataUrl: string;
+  sensor?: string;
+  date?: string;
+  resolution?: string;
 }

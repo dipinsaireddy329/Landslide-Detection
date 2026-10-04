@@ -25,6 +25,40 @@ const STORAGE_KEYS = {
   SETTINGS: 'landslide_app_settings'
 };
 
+// In-memory fallback if localStorage is partitioned or sandboxed in iframe
+const memoryStore: Record<string, string> = {};
+
+const safeStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        return window.localStorage.getItem(key);
+      }
+    } catch {
+      // Sandboxed iframe or quota exception
+    }
+    return memoryStore[key] || null;
+  },
+  setItem: (key: string, value: string): void => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(key, value);
+      }
+    } catch {
+      // Sandboxed iframe or quota exception
+    }
+    memoryStore[key] = value;
+  },
+  removeItem: (key: string): void => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem(key);
+      }
+    } catch {}
+    delete memoryStore[key];
+  }
+};
+
 export interface AppSettings {
   backendMode: 'embedded_pipeline' | 'flask_rest_api';
   flaskApiUrl: string;
@@ -77,10 +111,8 @@ class ApiService {
   }
 
   private loadFromStorage() {
-    if (typeof window === 'undefined') return;
-
     // Load settings
-    const savedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+    const savedSettings = safeStorage.getItem(STORAGE_KEYS.SETTINGS);
     if (savedSettings) {
       try {
         this.settings = { ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) };
@@ -90,7 +122,7 @@ class ApiService {
     }
 
     // Load user
-    const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
+    const savedUser = safeStorage.getItem(STORAGE_KEYS.USER);
     if (savedUser) {
       try {
         this.currentUser = JSON.parse(savedUser);
@@ -99,18 +131,21 @@ class ApiService {
       }
     }
 
+    // Ensure all 20 benchmark satellite samples have their dataUrl initialized
+    SATELLITE_SAMPLES.forEach((sample) => {
+      if (!sample.imageDataUrl || sample.imageDataUrl.length < 50) {
+        sample.imageDataUrl = generateProceduralSatelliteImage(sample.id);
+      }
+    });
+
     // Initialize predictions & samples if not present
-    if (!localStorage.getItem(STORAGE_KEYS.PREDICTIONS)) {
+    const existingPredsRaw = safeStorage.getItem(STORAGE_KEYS.PREDICTIONS);
+    if (!existingPredsRaw) {
       // Seed sample images with procedural canvas satellite data
       const sample1 = generateProceduralSatelliteImage('landslide_1');
       const sample2 = generateProceduralSatelliteImage('stable_1');
       const sample3 = generateProceduralSatelliteImage('landslide_2');
       const sample4 = generateProceduralSatelliteImage('stable_2');
-
-      SATELLITE_SAMPLES[0].imageDataUrl = sample1;
-      SATELLITE_SAMPLES[1].imageDataUrl = sample3;
-      SATELLITE_SAMPLES[2].imageDataUrl = sample2;
-      SATELLITE_SAMPLES[3].imageDataUrl = sample4;
 
       const seeded = INITIAL_PREDICTIONS.map((p, idx) => {
         let img = sample1;
@@ -119,12 +154,28 @@ class ApiService {
         if (idx === 3) img = sample4;
         return { ...p, imageUrl: img, thumbnailUrl: img };
       });
-      localStorage.setItem(STORAGE_KEYS.PREDICTIONS, JSON.stringify(seeded));
+      safeStorage.setItem(STORAGE_KEYS.PREDICTIONS, JSON.stringify(seeded));
+    } else {
+      // Ensure any existing stored predictions have valid image URLs
+      try {
+        const parsed = JSON.parse(existingPredsRaw);
+        let updated = false;
+        parsed.forEach((p: PredictionRecord, idx: number) => {
+          if (!p.imageUrl || p.imageUrl.length < 50) {
+            p.imageUrl = generateProceduralSatelliteImage(p.prediction === 'landslide' ? 'landslide_1' : 'stable_1');
+            p.thumbnailUrl = p.imageUrl;
+            updated = true;
+          }
+        });
+        if (updated) {
+          safeStorage.setItem(STORAGE_KEYS.PREDICTIONS, JSON.stringify(parsed));
+        }
+      } catch {}
     }
 
     // Initialize alerts
-    if (!localStorage.getItem(STORAGE_KEYS.ALERTS)) {
-      localStorage.setItem(STORAGE_KEYS.ALERTS, JSON.stringify(INITIAL_ALERTS));
+    if (!safeStorage.getItem(STORAGE_KEYS.ALERTS)) {
+      safeStorage.setItem(STORAGE_KEYS.ALERTS, JSON.stringify(INITIAL_ALERTS));
     }
   }
 
@@ -157,9 +208,7 @@ class ApiService {
 
   public updateSettings(newSettings: Partial<AppSettings>) {
     this.settings = { ...this.settings, ...newSettings };
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(this.settings));
-    }
+    safeStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(this.settings));
   }
 
   public isFlaskConnected(): boolean {
@@ -199,9 +248,7 @@ class ApiService {
       createdAt: new Date().toISOString()
     };
     this.currentUser = user;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-    }
+    safeStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
     return user;
   }
 
@@ -219,7 +266,7 @@ class ApiService {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Registration failed');
         this.currentUser = data.user;
-        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(data.user));
+        safeStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(data.user));
         return data.user;
       } catch (err: any) {
         console.warn('Flask registration failed, falling back to local session:', err.message);
@@ -234,17 +281,13 @@ class ApiService {
       createdAt: new Date().toISOString()
     };
     this.currentUser = user;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-    }
+    safeStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
     return user;
   }
 
   public logout() {
     this.currentUser = null;
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(STORAGE_KEYS.USER);
-    }
+    safeStorage.removeItem(STORAGE_KEYS.USER);
   }
 
   public getCurrentUser(): User | null {
@@ -370,14 +413,12 @@ class ApiService {
 
   // Save to SQLite/local database
   private savePrediction(record: PredictionRecord) {
-    if (typeof window === 'undefined') return;
     const existing = this.getPredictionsSync();
     const updated = [record, ...existing];
-    localStorage.setItem(STORAGE_KEYS.PREDICTIONS, JSON.stringify(updated));
+    safeStorage.setItem(STORAGE_KEYS.PREDICTIONS, JSON.stringify(updated));
   }
 
   private createAlertFromPrediction(record: PredictionRecord) {
-    if (typeof window === 'undefined') return;
     const alerts = this.getAlertsSync();
     const alertId = 'ALERT-' + Math.floor(100 + Math.random() * 900);
     const newAlert: AlertRecord = {
@@ -392,7 +433,7 @@ class ApiService {
       createdAt: new Date().toISOString()
     };
     const updated = [newAlert, ...alerts];
-    localStorage.setItem(STORAGE_KEYS.ALERTS, JSON.stringify(updated));
+    safeStorage.setItem(STORAGE_KEYS.ALERTS, JSON.stringify(updated));
   }
 
   // ===================== PREDICTIONS LIST & GET =====================
@@ -402,8 +443,7 @@ class ApiService {
   }
 
   private getPredictionsSync(): PredictionRecord[] {
-    if (typeof window === 'undefined') return INITIAL_PREDICTIONS;
-    const raw = localStorage.getItem(STORAGE_KEYS.PREDICTIONS);
+    const raw = safeStorage.getItem(STORAGE_KEYS.PREDICTIONS);
     if (!raw) return INITIAL_PREDICTIONS;
     try {
       return JSON.parse(raw);
@@ -424,8 +464,7 @@ class ApiService {
   }
 
   private getAlertsSync(): AlertRecord[] {
-    if (typeof window === 'undefined') return INITIAL_ALERTS;
-    const raw = localStorage.getItem(STORAGE_KEYS.ALERTS);
+    const raw = safeStorage.getItem(STORAGE_KEYS.ALERTS);
     if (!raw) return INITIAL_ALERTS;
     try {
       return JSON.parse(raw);
@@ -435,7 +474,6 @@ class ApiService {
   }
 
   public async acknowledgeAlert(alertId: string, acknowledgedBy?: string): Promise<boolean> {
-    if (typeof window === 'undefined') return false;
     const alerts = this.getAlertsSync();
     const updated = alerts.map(a => {
       if (a.id === alertId) {
@@ -448,7 +486,7 @@ class ApiService {
       }
       return a;
     });
-    localStorage.setItem(STORAGE_KEYS.ALERTS, JSON.stringify(updated));
+    safeStorage.setItem(STORAGE_KEYS.ALERTS, JSON.stringify(updated));
     return true;
   }
 
@@ -517,9 +555,8 @@ class ApiService {
 
   // Reset demo data
   public resetDatabase() {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem(STORAGE_KEYS.PREDICTIONS);
-    localStorage.removeItem(STORAGE_KEYS.ALERTS);
+    safeStorage.removeItem(STORAGE_KEYS.PREDICTIONS);
+    safeStorage.removeItem(STORAGE_KEYS.ALERTS);
     this.loadFromStorage();
   }
 }

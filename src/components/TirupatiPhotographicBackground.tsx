@@ -19,9 +19,12 @@ export const TirupatiPhotographicBackground: React.FC<TirupatiPhotographicBackgr
   const [photoUrl, setPhotoUrl] = useState<string>('');
 
   useEffect(() => {
-    // Generate or retrieve the photographic Tirupati Seven Hills landscape
-    const url = getTirupatiPhotographicImage();
-    setPhotoUrl(url);
+    try {
+      const url = getTirupatiPhotographicImage();
+      setPhotoUrl(url);
+    } catch (e) {
+      console.warn('Could not load photographic landscape background:', e);
+    }
   }, []);
 
   // Strict 8%–15% opacity constraint as requested

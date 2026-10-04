@@ -11,7 +11,8 @@ import {
   BookOpen, 
   Settings, 
   Activity,
-  Layers
+  Layers,
+  MoreVertical
 } from 'lucide-react';
 import { AlertRecord } from '../types';
 
@@ -21,6 +22,8 @@ interface SidebarProps {
   alerts: AlertRecord[];
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -28,7 +31,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigate,
   alerts,
   isMobileOpen = false,
-  onCloseMobile
+  onCloseMobile,
+  isCollapsed = false,
+  onToggleCollapse
 }) => {
   const activeAlerts = alerts.filter(a => a.status === 'active').length;
 
@@ -54,15 +59,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <div className="flex h-full flex-col justify-between p-4 bg-white border-r border-slate-200/80">
       <div className="space-y-6">
         
-        {/* Workspace Title & telemetry */}
-        <div className="px-2 pt-2">
-          <div className="flex items-center gap-2 text-xs font-mono font-semibold tracking-wider text-sky-700 uppercase">
-            <Activity className="h-3.5 w-3.5" />
-            <span>Earth Observation AI</span>
+        {/* Workspace Title & telemetry with 3 dots close button */}
+        <div className="px-2 pt-2 flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-mono font-semibold tracking-wider text-sky-700 uppercase">
+              <Activity className="h-3.5 w-3.5" />
+              <span>Earth Observation AI</span>
+            </div>
+            <div className="mt-1 text-xs text-slate-500">
+              Sentinel-2 & Landsat Processing
+            </div>
           </div>
-          <div className="mt-1 text-xs text-slate-500">
-            Sentinel-2 & Landsat Processing
-          </div>
+
+          {/* 3-dots button to close left side panel */}
+          <button
+            onClick={() => {
+              if (onToggleCollapse) onToggleCollapse();
+              if (onCloseMobile) onCloseMobile();
+            }}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+            title="Close left sidebar (3 dots)"
+            aria-label="Close left sidebar (3 dots)"
+          >
+            <MoreVertical className="h-4 w-4" />
+          </button>
         </div>
 
         {/* Navigation list */}
@@ -125,9 +145,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       {/* Desktop fixed sidebar */}
-      <aside className="hidden lg:block w-64 shrink-0 h-[calc(100vh-4rem)] sticky top-16">
-        {content}
-      </aside>
+      {!isCollapsed && (
+        <aside className="hidden lg:block w-64 shrink-0 h-[calc(100vh-4rem)] sticky top-16 transition-all duration-200">
+          {content}
+        </aside>
+      )}
 
       {/* Mobile drawer */}
       {isMobileOpen && (
