@@ -1,42 +1,46 @@
-# Landslide Detection from Satellite Imagery 🛰️⛰️
+# LandslideAI — Global Satellite-Based Landslide Detection 🛰️⛰️
 
-A geospatial AI disaster monitoring platform designed for landslide hazard classification, risk stratification, and terrain vulnerability analysis from satellite remote sensing imagery.
+A geospatial AI disaster monitoring platform designed for landslide hazard classification, risk stratification, and terrain vulnerability analysis from authentic satellite remote sensing imagery.
 
-The system combines **Gabor texture filtering**, **VGG19 high-level spatial feature extraction**, and **ResNet101 deep convolutional classification** with an interactive dashboard, an automated verification testbed, and a 20-scene global satellite benchmark dataset.
+The system combines **Gabor texture filtering**, **VGG19 high-level spatial feature extraction**, and **ResNet101 deep convolutional classification** with an interactive dashboard, an automated verification testbed, authentic multi-spectral Earth observation datasets, and full Vercel/Node production readiness.
 
 ---
 
 ## 🌟 Key Features
 
+- **Authentic Global Satellite Imagery Dataset**:
+  - **Copernicus Sentinel-2, Landsat 8/9, NASA Worldview, and EarthExplorer**: Genuine optical & infrared satellite observations for every benchmark scene.
+  - **20 Global Geographic Benchmark Scenes**:
+    - **Landslide Locations**: Wayanad (Western Ghats), Kedarnath Glacial Basin, Western Himalayas, Tirupati Seshachalam Escarpment, Darjeeling Terraces, Italian Dolomites, Mount St. Helens, Zhouqu, etc.
+    - **Stable Terrains**: Tirumala Sacred Reserve Basin, Nilgiri Biosphere, Swiss Alps Oberland, Pacific Northwest, Banff Canadian Rockies, Fiordland Granite, etc.
+  - Distinct spectral signatures, real-time sensor telemetry, and unique Earth observation imagery for every individual card and scene.
+
 - **Multi-Stage Computer Vision & AI Pipeline**:
   - **Radiometric Normalization & Preprocessing**: Standardizes input tiles to $224 \times 224 \times 3$ matrices with color-space calibration.
   - **Gabor Multi-Orientation Filtering**: Computes directional frequency responses across $0^\circ, 45^\circ, 90^\circ,$ and $135^\circ$ to isolate scarps, fissure striations, and slope shear planes.
-  - **VGG19 Feature Representation**: Models spatial variance, edge density, and soil displacement indices.
+  - **VGG19 Feature Representation**: Models spatial variance, edge density, and soil displacement indices (SDI).
   - **ResNet101 Hazard Classifier**: Produces calibrated probability scores and hazard classes (`landslide` vs. `non-landslide`) mapped to 4-tier risk categories (**Critical**, **High**, **Moderate**, **Low/Stable**).
 
-- **Curated 20 Satellite Benchmark Dataset**:
-  - **10 Landslide Hazard Scenes**: Western Himalayas, Wayanad Western Ghats, Kedarnath Glacial Basin, Tirupati Seshachalam Escarpment, Darjeeling Terraces, Italian Dolomites, Mount St. Helens, and more.
-  - **10 Stable Terrains**: Tirumala Sacred Reserve Basin, Nilgiri Biosphere, Swiss Alps Oberland, Pacific Northwest, Banff Canadian Rockies, Fiordland Granite, and more.
-  - One-click instant detection with sensor telemetry (Sentinel-2, Landsat-9, WorldView-3, PlanetScope).
-
-- **Flexible Architecture & Dual-Mode Execution**:
-  - **Embedded Pipeline**: Runs directly in the browser with zero external setup or latency using Web Canvas APIs.
-  - **Flask REST API Integration**: Connects seamlessly to external Python backends (`/api/predict`, `/api/health`, `/api/model-info`) when available.
+- **Full-Stack Architecture & API Express Bridge**:
+  - **Hybrid Dev/Prod Setup**: Vite + Express (`server.ts`) middleware in local dev with fallback SPA routing.
+  - **Production Vercel Ready**: Pre-configured `vercel.json` with SPA rewrites and `--legacy-peer-deps` dependency installation strategy.
+  - **Resolved Dependency Pipeline**: Explicit `react-is@^19.0.0` integration resolving Recharts 3.x module imports on React 19 / Vite.
 
 - **Responsive Earth Observation Workspace**:
-  - **Collapsible Sidebar**: Toggleable via `...` header buttons, navbar icon, or floating restoration button.
-  - **Tirupati Seven Hills Silhouette Background**: Ultra-subtle (8%–12% opacity) panoramic signature identity representing the Seshachalam mountain range.
+  - **Tirupati Seven Hills Silhouette Background**: Subtle panoramic vector background representing the Seshachalam mountain range.
   - **Automated Verification Testbed**: 12 integrated unit and end-to-end tests covering authentication, upload guards, inference accuracy, and alert dispatching.
-  - **Real-time Threat Alerts & Analytics**: Interactive trend graphs, risk distribution breakdowns, and confusion matrix metrics.
+  - **Real-time Threat Alerts & Analytics**: Interactive trend graphs with Recharts, risk distribution breakdowns, and confusion matrix metrics.
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS
+- **Frontend**: React 19, TypeScript, Vite 8, Tailwind CSS v4
+- **Charts & Data Viz**: Recharts (with explicit `react-is` resolution)
 - **Icons & Visuals**: Lucide React, Custom SVG Vector Terrain Silhouettes
-- **Computer Vision Simulation**: Web Canvas 2D Radiometric Processing & Gabor Kernel Kernels
-- **Backend / Storage**: REST API Bridge, Partitioned `localStorage` with in-memory fallback, Optional Flask Server
+- **Computer Vision Pipeline**: Web Canvas 2D Radiometric Processing & Gabor Kernel Filters
+- **Server**: Express 4, `tsx` TypeScript runner
+- **Deployment**: Vercel (`vercel.json`)
 
 ---
 
@@ -44,27 +48,30 @@ The system combines **Gabor texture filtering**, **VGG19 high-level spatial feat
 
 ### 1. Prerequisites
 - **Node.js** (v18.0 or higher)
-- **npm** or **yarn** / **pnpm**
+- **npm** (v9.0 or higher)
 
 ### 2. Installation
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd <project-directory>
+git clone https://github.com/dipinsaireddy329/Landslide-Detection.git
+cd Landslide-Detection
 
-# Install frontend dependencies
-npm install
+# Install dependencies
+npm install --legacy-peer-deps
 ```
 
 ### 3. Development Server
 ```bash
-# Start Vite development server
+# Start Vite + Express development server
 npm run dev
 ```
 Open your browser and navigate to `http://localhost:3000`.
 
-### 4. Build for Production
+### 4. Build & Preview
 ```bash
+# Type check and lint
+npm run lint
+
 # Build optimized static distribution
 npm run build
 
@@ -74,43 +81,62 @@ npm run preview
 
 ---
 
+## ☁️ Deploying to Vercel
+
+The project includes a pre-configured `vercel.json` optimized for Vite + React 19 deployments:
+
+1. Connect your repository `https://github.com/dipinsaireddy329/Landslide-Detection` to Vercel.
+2. Select **Vite** as the framework preset.
+3. Configure build settings:
+   - **Build Command**: `npm run build`
+   - **Install Command**: `npm install --legacy-peer-deps`
+   - **Output Directory**: `dist`
+
+### Common Deployment Fixes Applied
+- **`react-is` import resolution error in Recharts**: Fixed by declaring `react-is@^19.0.0` explicitly in `package.json`.
+- **Peer dependency conflicts**: Resolved by enforcing `--legacy-peer-deps` via `.npmrc` and `vercel.json`.
+
+---
+
 ## 🗺️ Project Structure
 
 ```text
+├── api/                           # Vercel serverless API handlers (if applicable)
 ├── src/
 │   ├── components/
-│   │   ├── AboutModelView.tsx             # Model metrics, confusion matrix, loss curves
-│   │   ├── AboutProjectView.tsx           # Literature references, dataset methodology
-│   │   ├── AlertsView.tsx                 # Hazard alert dispatcher & notifications
-│   │   ├── AnalyticsView.tsx              # Trend analytics, regional charts
-│   │   ├── AuthModal.tsx                  # Researcher credentials modal
-│   │   ├── DashboardOverview.tsx          # Main overview, KPI cards, benchmark showcase
-│   │   ├── DetectLandslideView.tsx        # Upload dropzone & visual inference inspector
-│   │   ├── LandingPage.tsx                # Hero presentation & operational badges
-│   │   ├── Navbar.tsx                     # Top navigation with 3-dots sidebar toggle
-│   │   ├── PredictionHistoryView.tsx      # Paginated inference history & filtering
-│   │   ├── PredictionResult.tsx           # Detailed results, Gabor & VGG19 previews
-│   │   ├── ProcessingPipeline.tsx         # Step-by-step pipeline animation
-│   │   ├── SettingsView.tsx               # Backend mode switcher & threshold controls
-│   │   ├── Sidebar.tsx                    # Collapsible left navigation panel
-│   │   ├── SystemArchitectureView.tsx     # Technical schematic & data flow
-│   │   ├── SystemTestingView.tsx          # 12-test automated verification suite
-│   │   ├── TirupatiSevenHillsBackground.tsx# Clean 7-hills vector silhouette (8-12% opacity)
-│   │   └── UploadDropzone.tsx             # 20-scene benchmark gallery & file upload
+│   │   ├── AboutModelView.tsx     # Model metrics, confusion matrix, loss curves
+│   │   ├── AboutProjectView.tsx   # Literature references, dataset methodology
+│   │   ├── AlertsView.tsx         # Hazard alert dispatcher & notifications
+│   │   ├── AnalyticsView.tsx      # Trend analytics, regional charts
+│   │   ├── AuthModal.tsx          # Researcher credentials modal
+│   │   ├── DashboardOverview.tsx  # Main overview, KPI cards, benchmark showcase
+│   │   ├── DetectLandslideView.tsx# Upload dropzone & visual inference inspector
+│   │   ├── LandingPage.tsx        # Hero presentation & operational badges
+│   │   ├── Navbar.tsx             # Top navigation with sidebar toggle
+│   │   ├── PredictionHistoryView.tsx # Paginated inference history & filtering
+│   │   ├── PredictionResult.tsx   # Detailed results, Gabor & VGG19 previews
+│   │   ├── ProcessingPipeline.tsx # Step-by-step pipeline animation
+│   │   ├── SettingsView.tsx       # Backend mode switcher & threshold controls
+│   │   ├── Sidebar.tsx            # Collapsible left navigation panel
+│   │   ├── SystemArchitectureView.tsx # Technical schematic & data flow
+│   │   ├── SystemTestingView.tsx  # 12-test automated verification suite
+│   │   ├── TirupatiSevenHillsBackground.tsx # Seven Hills vector silhouette
+│   │   └── UploadDropzone.tsx     # 20-scene benchmark gallery & file upload
 │   ├── services/
-│   │   ├── api.ts                         # Dual-mode API service & storage manager
-│   │   ├── imageAnalysis.ts               # Computer vision, Gabor filtering & scoring
-│   │   ├── sampleData.ts                  # 20 satellite scenes & historical datasets
-│   │   └── tirupatiLandscape.ts           # Landscape helpers
+│   │   ├── api.ts                 # Dual-mode API service & storage manager
+│   │   ├── imageAnalysis.ts       # Computer vision, Gabor filtering & scoring
+│   │   └── sampleData.ts          # Authentic 20 satellite scenes & metadata
 │   ├── types/
-│   │   └── index.ts                       # TypeScript interfaces & types
-│   ├── App.tsx                            # Root application component
-│   └── main.tsx                           # Application entry point & RootErrorBoundary
-├── index.html                             # HTML entry point with SEO metadata
-├── metadata.json                          # Applet configuration & permissions
-├── package.json                           # Dependencies & scripts
-├── tsconfig.json                          # TypeScript configuration
-└── vite.config.ts                         # Vite configuration
+│   │   └── index.ts               # TypeScript interfaces & types
+│   ├── App.tsx                    # Root application component
+│   └── main.tsx                   # Application entry point & RootErrorBoundary
+├── index.html                     # HTML entry point with SEO metadata
+├── metadata.json                  # Applet configuration & permissions
+├── package.json                   # Dependencies & build scripts
+├── server.ts                      # Express dev/prod backend server
+├── tsconfig.json                  # TypeScript configuration
+├── vercel.json                    # Vercel deployment configuration
+└── vite.config.ts                 # Vite configuration
 ```
 
 ---
