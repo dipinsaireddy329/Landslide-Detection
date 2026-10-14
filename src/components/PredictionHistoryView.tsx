@@ -10,6 +10,7 @@ import {
   X
 } from 'lucide-react';
 import { PredictionRecord, PredictionClass, RiskLevel } from '../types';
+import { getSatelliteImageryUrl } from '../services/satelliteImageryService';
 
 interface PredictionHistoryViewProps {
   predictions: PredictionRecord[];
@@ -207,14 +208,12 @@ export const PredictionHistoryView: React.FC<PredictionHistoryViewProps> = ({
 
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 shrink-0 rounded overflow-hidden bg-slate-100 border border-slate-200">
-                            {pred.imageUrl ? (
-                              <img src={pred.imageUrl} alt="" className="h-full w-full object-cover" />
-                            ) : (
-                              <div className="h-full w-full flex items-center justify-center font-mono text-[9px] text-slate-400">
-                                SAT
-                              </div>
-                            )}
+                          <div className="h-8 w-8 shrink-0 rounded overflow-hidden bg-slate-950 border border-slate-700/80">
+                            <img 
+                              src={pred.imageUrl || getSatelliteImageryUrl(pred.id, 'natural', pred.prediction === 'landslide' ? 'Landslide' : 'Stable', pred.locationName || 'Mountain Corridor', pred.coordinates || { lat: 13.67, lng: 79.35 })} 
+                              alt="" 
+                              className="h-full w-full object-cover" 
+                            />
                           </div>
                           <div className="truncate max-w-[160px] sm:max-w-xs">
                             <div className="font-bold text-slate-900 truncate">
@@ -339,7 +338,7 @@ export const PredictionHistoryView: React.FC<PredictionHistoryViewProps> = ({
             {/* Satellite image preview */}
             <div className="relative aspect-[16/9] w-full rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
               <img
-                src={selectedModalPred.imageUrl}
+                src={selectedModalPred.imageUrl || getSatelliteImageryUrl(selectedModalPred.id, 'natural', selectedModalPred.prediction === 'landslide' ? 'Landslide' : 'Stable', selectedModalPred.locationName || 'Mountain Corridor', selectedModalPred.coordinates || { lat: 13.67, lng: 79.35 })}
                 alt="Satellite capture"
                 className="w-full h-full object-cover"
               />

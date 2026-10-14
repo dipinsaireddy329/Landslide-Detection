@@ -299,7 +299,11 @@ class ApiService {
   /**
    * POST /api/predict
    */
-  public async predict(fileOrDataUrl: File | string, metadata?: { name?: string; location?: string }): Promise<{
+  public async predict(fileOrDataUrl: File | string, metadata?: { 
+    name?: string; 
+    location?: string;
+    acquisitionMetadata?: any;
+  }): Promise<{
     prediction: PredictionRecord;
     response: PredictResponse;
     vggHeatmap: string;
@@ -341,7 +345,8 @@ class ApiService {
             createdAt: new Date().toISOString(),
             status: 'completed',
             locationName: metadata?.location || 'Target Survey Region',
-            features: data.features
+            features: data.features,
+            acquisitionMetadata: metadata?.acquisitionMetadata
           };
           this.savePrediction(record);
           if (record.prediction === 'landslide') {
@@ -384,7 +389,8 @@ class ApiService {
       createdAt: new Date().toISOString(),
       status: 'completed',
       locationName: metadata?.location || 'Target Survey Grid',
-      features: analysis.features
+      features: analysis.features,
+      acquisitionMetadata: metadata?.acquisitionMetadata
     };
 
     this.savePrediction(record);

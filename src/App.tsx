@@ -14,6 +14,7 @@ import { AboutProjectView } from './components/AboutProjectView';
 import { SettingsView } from './components/SettingsView';
 import { AuthModal } from './components/AuthModal';
 import { TirupatiSevenHillsBackground } from './components/TirupatiSevenHillsBackground';
+import { GhatGuardConsole } from './components/GhatGuardConsole';
 import { MoreVertical } from 'lucide-react';
 
 import { api } from './services/api';
@@ -179,6 +180,15 @@ export default function App() {
               />
             )}
 
+            {activeView === 'dispatch' && (
+              <GhatGuardConsole
+                onNavigateAlerts={() => handleNavigate('alerts')}
+                onNavigateDetect={(_sampleId) => {
+                  handleNavigate('detect');
+                }}
+              />
+            )}
+
             {activeView === 'detect' && (
               <DetectLandslideView
                 onPredictionComplete={handlePredictionComplete}
@@ -248,20 +258,6 @@ export default function App() {
               className="hover:text-sky-700 transition-colors cursor-pointer"
             >
               Academic Spec
-            </button>
-            <span>·</span>
-            <button 
-              onClick={() => handleNavigate('architecture')} 
-              className="hover:text-sky-700 transition-colors cursor-pointer"
-            >
-              System Architecture
-            </button>
-            <span>·</span>
-            <button 
-              onClick={() => handleNavigate('testing')} 
-              className="hover:text-sky-700 transition-colors cursor-pointer"
-            >
-              Testing Suite
             </button>
           </div>
         </div>

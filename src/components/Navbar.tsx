@@ -87,6 +87,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             Dashboard
           </button>
           <button
+            onClick={() => onNavigate('dispatch')}
+            className={`hover:text-slate-900 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 px-2.5 py-1 rounded-md ${
+              activeView === 'dispatch' 
+                ? 'bg-emerald-50 text-emerald-700 font-bold border border-emerald-300 shadow-xs' 
+                : 'text-emerald-700 font-medium hover:bg-emerald-50/60'
+            }`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Dispatch Console</span>
+          </button>
+          <button
             onClick={() => onNavigate('detect')}
             className={`hover:text-slate-900 transition-colors whitespace-nowrap cursor-pointer ${
               activeView === 'detect' ? 'text-sky-700 font-semibold' : ''
@@ -111,14 +122,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             Analytics
           </button>
           <button
-            onClick={() => onNavigate('architecture')}
-            className={`hover:text-slate-900 transition-colors whitespace-nowrap cursor-pointer ${
-              activeView === 'architecture' ? 'text-sky-700 font-semibold' : ''
-            }`}
-          >
-            Architecture
-          </button>
-          <button
             onClick={() => onNavigate('about-project')}
             className={`hover:text-slate-900 transition-colors whitespace-nowrap cursor-pointer ${
               activeView === 'about-project' ? 'text-sky-700 font-semibold' : ''
@@ -130,16 +133,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Zone 3: Actions & Status */}
         <div className="flex items-center gap-3">
-          {/* Backend Status indicator */}
-          <div className="hidden xl:flex items-center gap-2 text-xs font-mono text-slate-600 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200">
-            <span 
-              className={`h-2 w-2 rounded-full ${isFlaskConnected ? 'bg-emerald-500 animate-pulse' : 'bg-sky-500'}`} 
-              aria-hidden="true" 
-            />
-            <span className="text-[11px] font-medium tracking-tight">
-              {isFlaskConnected ? 'FLASK LIVE' : 'AI PIPELINE ACTIVE'}
-            </span>
-          </div>
 
           {/* Alerts quick button */}
           <button

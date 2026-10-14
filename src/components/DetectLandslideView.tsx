@@ -33,7 +33,7 @@ export const DetectLandslideView: React.FC<DetectLandslideViewProps> = ({
 
   const handleStartAnalysis = async (
     fileOrUrl: File | string,
-    metadata: { name: string; location: string }
+    metadata: { name: string; location: string; acquisitionMetadata?: any }
   ) => {
     setIsProcessing(true);
     setIsPipelineComplete(false);

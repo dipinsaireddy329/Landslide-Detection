@@ -37,6 +37,19 @@ export interface PredictionRecord {
   locationName?: string;
   coordinates?: { lat: number; lng: number };
   notes?: string;
+  acquisitionMetadata?: {
+    acquisitionDate: string;
+    sensorPlatform: string;
+    cloudCover: number;
+    spatialResolution: string;
+    sunElevation?: number;
+    sunAzimuth?: number;
+    processingLevel?: string;
+    crsProjection?: string;
+    sceneId?: string;
+    qualityScore?: number;
+    validationStatus?: 'passed' | 'warning' | 'error';
+  };
 }
 
 export interface PredictResponse {
@@ -118,4 +131,31 @@ export interface SatelliteSample {
   sensor?: string;
   date?: string;
   resolution?: string;
+}
+
+export interface SatelliteSceneRecord {
+  id: string; // e.g. "sample-01" through "sample-100"
+  title: string;
+  location: string;
+  latitude: number | null;
+  longitude: number | null;
+  satelliteSource: 'Sentinel-2' | 'Landsat-8' | 'Landsat-9' | 'NASA Worldview' | 'PlanetScope';
+  acquisitionDate: string | null;
+  spatialResolution: string | null;
+  imageUrl: string | null;
+  thumbnailUrl: string | null;
+  imageAssetId?: string | null;
+  groundTruth: 'Landslide' | 'Stable' | 'Unknown';
+  riskLevel: 'Critical' | 'High' | 'Moderate' | 'Low' | 'Unknown';
+  ndvi: number | null;
+  cloudCoverPercentage: number | null;
+  dataSource: string;
+  dataType: string;
+  description: string;
+  processingLevel?: string;
+  elevation?: string;
+  slopeGradient?: string;
+  roadCorridor?: string;
+  sdiIndex?: number | null;
+  isDemonstration?: boolean;
 }

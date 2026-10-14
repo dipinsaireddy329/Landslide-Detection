@@ -204,6 +204,89 @@ async function startServer() {
     });
   });
 
+  // ----------------- SATELLITE IMAGERY PROXY & CACHE -----------------
+  const satelliteTileCache = new Map<string, { buffer: Buffer; contentType: string; timestamp: number }>();
+
+  app.get('/api/satellite-image', async (req: Request, res: Response) => {
+    const lat = parseFloat(req.query.lat as string);
+    const lng = parseFloat(req.query.lng as string);
+    const source = (req.query.source as string) || 'Sentinel-2';
+    const mode = (req.query.mode as string) || 'natural';
+    const date = (req.query.date as string) || '2023-10-15';
+
+    if (isNaN(lat) || isNaN(lng)) {
+      return res.status(400).json({ error: 'Valid latitude and longitude required' });
+    }
+
+    const cacheKey = `${lat.toFixed(4)}_${lng.toFixed(4)}_${source}_${mode}_${date}`;
+    if (satelliteTileCache.has(cacheKey)) {
+      const cached = satelliteTileCache.get(cacheKey)!;
+      res.setHeader('Content-Type', cached.contentType);
+      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+      res.setHeader('X-Satellite-Cache', 'HIT');
+      return res.send(cached.buffer);
+    }
+
+    try {
+      let upstreamUrl = '';
+      if (source === 'NASA Worldview' || mode === 'false_color') {
+        const delta = 0.08;
+        const minLat = (lat - delta).toFixed(4);
+        const maxLat = (lat + delta).toFixed(4);
+        const minLng = (lng - delta).toFixed(4);
+        const maxLng = (lng + delta).toFixed(4);
+        const layer = mode === 'false_color'
+          ? 'MODIS_Terra_CorrectedReflectance_Bands721'
+          : 'MODIS_Terra_CorrectedReflectance_TrueColor';
+        upstreamUrl = `https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?service=WMS&version=1.3.0&request=GetMap&layers=${layer}&styles=&time=${date}&format=image/jpeg&crs=CRS:84&bbox=${minLng},${minLat},${maxLng},${maxLat}&width=512&height=512`;
+      } else {
+        // Copernicus Sentinel-2 L2A Cloudless 10m nadir composite
+        const delta = 0.035;
+        const minLat = (lat - delta).toFixed(4);
+        const maxLat = (lat + delta).toFixed(4);
+        const minLng = (lng - delta).toFixed(4);
+        const maxLng = (lng + delta).toFixed(4);
+        upstreamUrl = `https://tiles.maps.eox.at/wms?service=wms&request=getmap&version=1.3.0&layers=s2cloudless-2020&styles=&format=image/jpeg&crs=EPSG:4326&bbox=${minLat},${minLng},${maxLat},${maxLng}&width=512&height=512`;
+      }
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const upstreamRes = await fetch(upstreamUrl, { signal: controller.signal });
+      clearTimeout(timeout);
+
+      if (!upstreamRes.ok) {
+        throw new Error(`Upstream provider error: HTTP ${upstreamRes.status}`);
+      }
+
+      const arrayBuf = await upstreamRes.arrayBuffer();
+      const buffer = Buffer.from(arrayBuf);
+      const contentType = upstreamRes.headers.get('content-type') || 'image/jpeg';
+
+      if (satelliteTileCache.size > 300) {
+        const firstKey = satelliteTileCache.keys().next().value;
+        if (firstKey) satelliteTileCache.delete(firstKey);
+      }
+
+      satelliteTileCache.set(cacheKey, {
+        buffer,
+        contentType,
+        timestamp: Date.now()
+      });
+
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+      res.setHeader('X-Satellite-Cache', 'MISS');
+      return res.send(buffer);
+    } catch (err: any) {
+      console.warn(`Upstream satellite fetch failed for [${lat}, ${lng}]:`, err.message);
+      return res.status(502).json({ 
+        error: 'Upstream satellite imagery unavailable',
+        provider: source,
+        coordinates: { lat, lng }
+      });
+    }
+  });
+
   // ----------------- PREDICTIONS ENDPOINTS -----------------
   app.get('/api/predictions', (_req: Request, res: Response) => {
     res.json(predictions);

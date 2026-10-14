@@ -1,4 +1,5 @@
 import { SatelliteSample, PredictionRecord, AlertRecord, AnalyticsData, ModelInfo } from '../types';
+import { generateNadirSatelliteTile } from './satelliteImageryService';
 
 // Cache for generated procedural satellite images
 const proceduralImageCache: Record<string, string> = {};
@@ -228,15 +229,48 @@ export function generateProceduralSatelliteImage(typeOrId: string = 'landslide_1
 
 // Safe getter to guarantee a valid image URL for any sample
 export function getSampleImageDataUrl(sampleOrId: SatelliteSample | string): string {
-  if (typeof sampleOrId === 'string') {
-    return generateProceduralSatelliteImage(sampleOrId);
+  const sample = typeof sampleOrId === 'string' 
+    ? SATELLITE_SAMPLES.find(s => s.id === sampleOrId) 
+    : sampleOrId;
+
+  if (sample && sample.imageDataUrl && sample.imageDataUrl.length > 50) {
+    return sample.imageDataUrl;
   }
-  if (sampleOrId.imageDataUrl && sampleOrId.imageDataUrl.length > 50) {
-    return sampleOrId.imageDataUrl;
+
+  const id = typeof sampleOrId === 'string' ? sampleOrId : sampleOrId.id;
+  const isLandslide = sample 
+    ? sample.groundTruth === 'landslide' 
+    : (id.includes('landslide') || id.startsWith('sample-ls') || id === 'landslide_1' || id === 'landslide_2');
+
+  const loc = sample ? sample.region : 'Uttarakhand, Western Himalayas';
+  const coords = sample ? sample.coordinates : { lat: 30.4128, lng: 79.3245 };
+  const sensor = (sample && sample.sensor) ? sample.sensor : 'Sentinel-2 MSI';
+  const date = (sample && sample.date) ? sample.date : '2023-10-26';
+  const resolution = (sample && sample.resolution) ? sample.resolution : '10m GSD';
+
+  const tileUrl = generateNadirSatelliteTile({
+    sceneId: id,
+    source: sensor.includes('Sentinel') ? 'Sentinel-2' : sensor.includes('Landsat') ? 'Landsat-9' : 'PlanetScope',
+    processingLevel: 'Level-2A BOA Surface Reflectance',
+    acquisitionDate: date,
+    spatialResolution: resolution,
+    coordinates: coords,
+    cloudCoverPercentage: 1.2,
+    sunElevationAngle: 43.5,
+    spectralBands: ['B02', 'B03', 'B04', 'B08'],
+    groundTruth: isLandslide ? 'Landslide' : 'Stable',
+    riskLevel: isLandslide ? 'Critical' : 'Low',
+    measuredNdvi: isLandslide ? 0.16 : 0.81,
+    sdiIndex: isLandslide ? 8.4 : 0.6,
+    locationName: loc,
+    roadCorridor: sample ? sample.name : undefined
+  }, 'natural', 512, 512);
+
+  const finalUrl = tileUrl || generateProceduralSatelliteImage(id);
+  if (sample && finalUrl) {
+    sample.imageDataUrl = finalUrl;
   }
-  const generated = generateProceduralSatelliteImage(sampleOrId.id);
-  sampleOrId.imageDataUrl = generated;
-  return generated;
+  return finalUrl;
 }
 
 // Exactly 20 Curated Satellite Benchmark Scenes for Landslide Detection
